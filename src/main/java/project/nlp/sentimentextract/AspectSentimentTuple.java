@@ -1,5 +1,7 @@
 package project.nlp.sentimentextract;
 
+import java.util.List;
+
 public class AspectSentimentTuple {
 	private String aspect;
 	private String sentiment;
@@ -14,5 +16,12 @@ public class AspectSentimentTuple {
 	}
 	public String getSentiment() {
 		return sentiment;
+	}
+	
+	public static boolean containsTuple(String aspect,String sentiment,List<AspectSentimentTuple> tupleList){
+		for(AspectSentimentTuple tuple:tupleList){
+			if(aspect.equals(tuple.getAspect()) && sentiment.equals(tuple.getSentiment()) ) return true;
+		}
+		return false;
 	}
 }

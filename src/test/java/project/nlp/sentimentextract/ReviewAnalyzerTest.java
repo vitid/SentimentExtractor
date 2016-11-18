@@ -14,8 +14,12 @@ public class ReviewAnalyzerTest {
 	
 	@Before
 	public void before(){
-		String reviewContent = "This MOVIE_PLOT is good. It has a great MOVIE_SONG."
-				+ "MOVIE_ACTING is the best actor in the planet.";
+		String reviewContent = 
+				"This MOVIE_PLOT is not very good."
+				+ " The MOVIE_PLOT and MOVIE_ACTING are really cool."
+				+ " The MOVIE_SONG is loud and clear."
+				+ " It has a great MOVIE_SONG."
+				+ " MOVIE_ACTING is the best actor in the planet.";
 		ruleManager = new RuleManager("extract_rules.test.properties");
 		reviewAnalyzer = new ReviewAnalyzer(reviewContent, ruleManager);
 	}
@@ -23,13 +27,17 @@ public class ReviewAnalyzerTest {
 	@Test
 	public void testExtractAspectSentimentExpression(){
 		ArrayList<AspectSentimentTuple> tupleList = reviewAnalyzer.extractAspectSentimentExpression();
-		assertEquals(3, tupleList.size());
-		assertEquals("MOVIE_PLOT",tupleList.get(0).getAspect());
-		assertEquals("good",tupleList.get(0).getSentiment());
-		assertEquals("MOVIE_SONG",tupleList.get(1).getAspect());
-		assertEquals("great",tupleList.get(1).getSentiment());
-		assertEquals("MOVIE_ACTING",tupleList.get(2).getAspect());
-		assertEquals("best",tupleList.get(2).getSentiment());
+		//assertEquals(3, tupleList.size());
+		
+		assertTrue(AspectSentimentTuple.containsTuple("MOVIE_PLOT", "not very good", tupleList));
+		assertTrue(AspectSentimentTuple.containsTuple("MOVIE_PLOT", "really cool", tupleList));
+		assertTrue(AspectSentimentTuple.containsTuple("MOVIE_ACTING", "really cool", tupleList));
+		assertTrue(AspectSentimentTuple.containsTuple("MOVIE_SONG", "loud", tupleList));
+		assertTrue(AspectSentimentTuple.containsTuple("MOVIE_SONG", "clear", tupleList));
+		
+		assertTrue(AspectSentimentTuple.containsTuple("MOVIE_SONG", "great", tupleList));
+		assertTrue(AspectSentimentTuple.containsTuple("MOVIE_ACTING", "best", tupleList));
+		
 	}
 	
 }

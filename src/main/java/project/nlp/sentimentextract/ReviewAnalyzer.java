@@ -1,12 +1,14 @@
 package project.nlp.sentimentextract;
 
 import java.util.ArrayList;
+import java.util.Collections;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import edu.stanford.nlp.ling.IndexedWord;
 import edu.stanford.nlp.semgraph.SemanticGraph;
+import edu.stanford.nlp.semgraph.SemanticGraphEdge;
 import edu.stanford.nlp.semgraph.semgrex.SemgrexMatcher;
 import edu.stanford.nlp.semgraph.semgrex.SemgrexPattern;
 import edu.stanford.nlp.simple.*;
@@ -28,6 +30,7 @@ public class ReviewAnalyzer {
 		
 		for(Sentence sentence: reviewDocument.sentences()){
 			//Should skip this sentence if it doesn't contain any aspects
+			if(Collections.disjoint(sentence.words(),ruleManager.getAspectList())) continue;
 			
 			SemanticGraph dependencyGraph = sentence.dependencyGraph();
 			for(String word:sentence.words()){
@@ -36,8 +39,9 @@ public class ReviewAnalyzer {
 						String finaleRule = ruleManager.parseRule(rule, word);
 						SemgrexMatcher matcher = SemgrexPattern.compile(finaleRule).matcher(dependencyGraph);
 						while(matcher.findNextMatchingNode()){
-							IndexedWord matchNode = matcher.getMatch();
-							String sentimentExpression = matchNode.originalText();
+							//currently, matchNode is of type ADJ(JJ*) only
+							IndexedWord matchAdjNode = matcher.getMatch();
+							String sentimentExpression = this.embalishAdj(matchAdjNode, dependencyGraph);
 							AspectSentimentTuple tuple = new AspectSentimentTuple(word, sentimentExpression);
 							tupleList.add(tuple);
 						}
@@ -46,5 +50,17 @@ public class ReviewAnalyzer {
 			}
 		}
 		return tupleList;
+	}
+	
+	private String embalishAdj(IndexedWord adjIndexWord,SemanticGraph dependencyGraph){
+		String embalishedAdj = "";
+		for(SemanticGraphEdge edge:dependencyGraph.outgoingEdgeIterable(adjIndexWord)){
+			//append only Adverb
+			if("RB".equalsIgnoreCase(edge.getDependent().tag())){
+				embalishedAdj += edge.getDependent().originalText() + " ";
+			}
+		}
+		embalishedAdj += adjIndexWord.originalText();
+		return embalishedAdj;
 	}
 }
