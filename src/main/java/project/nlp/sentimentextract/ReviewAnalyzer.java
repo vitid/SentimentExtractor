@@ -15,7 +15,7 @@ import edu.stanford.nlp.simple.*;
 import project.nlp.sentimentextract.rule.RuleManager;
 public class ReviewAnalyzer {
 	
-	private static final Logger logger = LogManager.getLogger(RuleManager.class);
+	private static final Logger logger = LogManager.getLogger(ReviewAnalyzer.class);
 	private Document reviewDocument;
 	private RuleManager ruleManager;
 	
