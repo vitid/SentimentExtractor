@@ -1,6 +1,7 @@
 package project.nlp.sentimentextract.rule;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Enumeration;
 import java.util.Properties;
 
 import org.apache.logging.log4j.LogManager;
@@ -18,15 +19,15 @@ public class RuleManager {
 			Properties prop = new Properties();
 			prop.load(this.getClass().getClassLoader().getResourceAsStream(configFile));
 			
-			String aspects[] = prop.getProperty("aspect").split(",");
-			aspectList.addAll(Arrays.asList(aspects));
-			
-			int index = 0;
-			while(prop.get("rule."+index) != null){
-				ruleList.add(prop.get("rule."+index) + "");
-				index += 1;
+			for(Enumeration<String> e = (Enumeration<String>) prop.propertyNames();e.hasMoreElements();){
+				String propName = e.nextElement();
+				if("aspect".equals(propName)){
+					String aspects[] = prop.getProperty("aspect").split(",");
+					aspectList.addAll(Arrays.asList(aspects));
+				}else{
+					ruleList.add(prop.getProperty(propName));
+				}
 			}
-			
 			
 		}catch(Exception e){
 			logger.error("Can't extract configFile:" + configFile,e);

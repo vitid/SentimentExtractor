@@ -20,7 +20,7 @@ public class RuleManagerTest {
 	
 	@Test
 	public void testGetRuleList(){
-		assertEquals("{tag:/JJ.*/} >> {word:_ASPECTS_}", ruleManager.getRuleList().get(0));
+		assertEquals(5, ruleManager.getRuleList().size());
 	}
 	
 	@Test

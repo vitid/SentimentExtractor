@@ -10,34 +10,84 @@ import java.util.ArrayList;
 
 public class ReviewAnalyzerTest {
 	private RuleManager ruleManager;
-	private ReviewAnalyzer reviewAnalyzer;
+	//private ReviewAnalyzer reviewAnalyzer;
 	
 	@Before
 	public void before(){
-		String reviewContent = 
-				"This MOVIE_PLOT is not very good."
-				+ " The MOVIE_PLOT and MOVIE_ACTING are really cool."
-				+ " The MOVIE_SONG is loud and clear."
-				+ " It has a great MOVIE_SONG."
-				+ " MOVIE_ACTING is the best actor in the planet.";
 		ruleManager = new RuleManager("extract_rules.test.properties");
-		reviewAnalyzer = new ReviewAnalyzer(reviewContent, ruleManager);
 	}
 	
 	@Test
-	public void testExtractAspectSentimentExpression(){
+	public void testMappingAspectWithAdj(){
+		ReviewAnalyzer reviewAnalyzer = new ReviewAnalyzer("MOVIE_ACTOR is very good.", ruleManager);
 		ArrayList<AspectSentimentTuple> tupleList = reviewAnalyzer.extractAspectSentimentExpression();
-		//assertEquals(3, tupleList.size());
+		assertEquals(1, tupleList.size());
+		assertTrue(tupleList.contains(new AspectSentimentTuple("MOVIE_ACTOR", "very good")));
 		
-		assertTrue(AspectSentimentTuple.containsTuple("MOVIE_PLOT", "not very good", tupleList));
-		assertTrue(AspectSentimentTuple.containsTuple("MOVIE_PLOT", "really cool", tupleList));
-		assertTrue(AspectSentimentTuple.containsTuple("MOVIE_ACTING", "really cool", tupleList));
-		assertTrue(AspectSentimentTuple.containsTuple("MOVIE_SONG", "loud", tupleList));
-		assertTrue(AspectSentimentTuple.containsTuple("MOVIE_SONG", "clear", tupleList));
+		reviewAnalyzer = new ReviewAnalyzer("A really good MOVIE_ACTOR.", ruleManager);
+		tupleList = reviewAnalyzer.extractAspectSentimentExpression();
+		assertEquals(1, tupleList.size());
+		assertTrue(tupleList.contains(new AspectSentimentTuple("MOVIE_ACTOR", "really good")));
+	}
+	
+	@Test
+	public void testMappingAspectWithNoun(){
+		ReviewAnalyzer reviewAnalyzer = new ReviewAnalyzer("MOVIE_ACTOR is a very good person.", ruleManager);
+		ArrayList<AspectSentimentTuple> tupleList = reviewAnalyzer.extractAspectSentimentExpression();
+		assertEquals(1, tupleList.size());
+		assertTrue(tupleList.contains(new AspectSentimentTuple("MOVIE_ACTOR", "very good person")));
 		
-		assertTrue(AspectSentimentTuple.containsTuple("MOVIE_SONG", "great", tupleList));
-		assertTrue(AspectSentimentTuple.containsTuple("MOVIE_ACTING", "best", tupleList));
+		reviewAnalyzer = new ReviewAnalyzer("A really good person is MOVIE_ACTOR.", ruleManager);
+		tupleList = reviewAnalyzer.extractAspectSentimentExpression();
+		assertEquals(1, tupleList.size());
+		assertTrue(tupleList.contains(new AspectSentimentTuple("MOVIE_ACTOR", "really good person")));
+	}
+	
+	@Test
+	public void testConjClause(){
+		//but clause between adj <-> adj
+		ReviewAnalyzer reviewAnalyzer = new ReviewAnalyzer("MOVIE_ACTOR is very good but the MOVIE_PLOT is extremely short.", ruleManager);
+		ArrayList<AspectSentimentTuple> tupleList = reviewAnalyzer.extractAspectSentimentExpression();
+		assertEquals(2, tupleList.size());
+		assertTrue(tupleList.contains(new AspectSentimentTuple("MOVIE_ACTOR", "very good","but","extremely short")));
+		assertTrue(tupleList.contains(new AspectSentimentTuple("MOVIE_PLOT", "extremely short","but","very good")));
 		
+		//but clause between adj <-> noun
+		reviewAnalyzer = new ReviewAnalyzer("MOVIE_ACTOR is a very good person but the MOVIE_PLOT is extremely short.", ruleManager);
+		tupleList = reviewAnalyzer.extractAspectSentimentExpression();
+		assertEquals(2, tupleList.size());
+		assertTrue(tupleList.contains(new AspectSentimentTuple("MOVIE_ACTOR", "very good person","but","extremely short")));
+		assertTrue(tupleList.contains(new AspectSentimentTuple("MOVIE_PLOT", "extremely short","but","very good person")));
+		
+		//and clause between adj <-> noun
+		reviewAnalyzer = new ReviewAnalyzer("MOVIE_ACTOR is a very good person and the MOVIE_PLOT is extremely short.", ruleManager);
+		tupleList = reviewAnalyzer.extractAspectSentimentExpression();
+		assertEquals(2, tupleList.size());
+		assertTrue(tupleList.contains(new AspectSentimentTuple("MOVIE_ACTOR", "very good person","and","extremely short")));
+		assertTrue(tupleList.contains(new AspectSentimentTuple("MOVIE_PLOT", "extremely short","and","very good person")));
+		
+		//and clause between noun <-> noun
+		reviewAnalyzer = new ReviewAnalyzer("MOVIE_ACTOR is a very good person and the MOVIE_PLOT is an extremely short film.", ruleManager);
+		tupleList = reviewAnalyzer.extractAspectSentimentExpression();
+		assertEquals(2, tupleList.size());
+		assertTrue(tupleList.contains(new AspectSentimentTuple("MOVIE_ACTOR", "very good person","and","extremely short film")));
+		assertTrue(tupleList.contains(new AspectSentimentTuple("MOVIE_PLOT", "extremely short film","and","very good person")));
+	}
+	
+	@Test
+	public void testEmbalishAdj(){
+		ReviewAnalyzer reviewAnalyzer = new ReviewAnalyzer("A not really very good MOVIE_ACTOR", ruleManager);
+		ArrayList<AspectSentimentTuple> tupleList = reviewAnalyzer.extractAspectSentimentExpression();
+		assertEquals(1, tupleList.size());
+		assertTrue(tupleList.contains(new AspectSentimentTuple("MOVIE_ACTOR", "not really very good")));
+	}
+	
+	@Test
+	public void testEmbalishNoun(){
+		ReviewAnalyzer reviewAnalyzer = new ReviewAnalyzer("MOVIE_ACTOR is not a very good person", ruleManager);
+		ArrayList<AspectSentimentTuple> tupleList = reviewAnalyzer.extractAspectSentimentExpression();
+		assertEquals(1, tupleList.size());
+		assertTrue(tupleList.contains(new AspectSentimentTuple("MOVIE_ACTOR", "not very good person")));
 	}
 	
 }
