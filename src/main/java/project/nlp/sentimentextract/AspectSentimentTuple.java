@@ -42,7 +42,8 @@ public class AspectSentimentTuple {
 
 	public String toString(){
 		
-		return(String.format("aspect:%s, sentiment:%s, conj:%s, conjSentiment:%s", 
+		return(String.format("%s(aspect:%s, sentiment:%s, conj:%s, conjSentiment:%s)",
+				AspectSentimentTuple.class,
 				getAspect(),
 				getSentiment(),
 				getConj(),

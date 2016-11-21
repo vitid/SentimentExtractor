@@ -1,4 +1,4 @@
-package project.nlp.sentimentextract;
+package project.nlp.sentimentextract.cli;
 
 import java.io.File;
 import java.io.FileReader;
@@ -16,6 +16,8 @@ import org.apache.logging.log4j.Logger;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
+
+import project.nlp.sentimentextract.CoreferenceParser;
 
 public class CoreferenceRunner {
 	

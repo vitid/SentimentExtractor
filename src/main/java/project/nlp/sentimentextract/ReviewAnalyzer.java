@@ -20,12 +20,17 @@ public class ReviewAnalyzer {
 	private static final Logger logger = LogManager.getLogger(ReviewAnalyzer.class);
 	private Document reviewDocument;
 	private RuleManager ruleManager;
+	private boolean isPrintPOS = false;
 	
 	public ReviewAnalyzer(String reviewContent,RuleManager ruleManager){
 		reviewDocument = new Document(reviewContent);
 		this.ruleManager = ruleManager; 
 	}
 	
+	public void setPrintPOS(boolean isPrintPOS) {
+		this.isPrintPOS = isPrintPOS;
+	}
+
 	public ArrayList<AspectSentimentTuple> extractAspectSentimentExpression(){
 		ArrayList<AspectSentimentTuple> tupleList = new ArrayList<AspectSentimentTuple>();
 		
@@ -56,7 +61,7 @@ public class ReviewAnalyzer {
 						String finaleRule = ruleManager.parseRule(rule, word);
 						SemgrexMatcher matcher = SemgrexPattern.compile(finaleRule).matcher(dependencyGraphNoCONJ);
 						while(matcher.findNextMatchingNode()){
-							//currently, matchNode is of type ADJ(JJ*) only
+
 							IndexedWord matchNode = matcher.getMatch();
 							String sentimentExpression = this.embalishNode(matchNode, dependencyGraphNoCONJ);
 							AspectSentimentTuple tuple = new AspectSentimentTuple(word, sentimentExpression);
@@ -66,6 +71,7 @@ public class ReviewAnalyzer {
 								tuple.setConj(conj.getValue1());
 								tuple.setConjSentiment(this.embalishNode(conj.getValue0(), dependencyGraphNoCONJ));
 							}
+							logger.info("[Add tuple]"+tuple.toString());
 							tupleList.add(tuple);
 						}
 					}
@@ -102,8 +108,9 @@ public class ReviewAnalyzer {
 			case "VB":
 				
 		}
-		return node.originalText();
+		return this.getNodeText(node);
 	}
+	
 	/*
 	private String embalishVerb(IndexedWord node,SemanticGraph dependencyGraph){
 		String embalishedVerb = "";
@@ -114,10 +121,11 @@ public class ReviewAnalyzer {
 				embalishedVerb += this.embalishAdverb(edge.getDependent(), dependencyGraph) + " ";
 			}
 		}
-		embalishedVerb += node.originalText();
+		embalishedVerb += getNodeText(node);
 		return embalishedVerb;
 	}
 	*/
+	
 	private String embalishNoun(IndexedWord node,SemanticGraph dependencyGraph){
 		String embalishedNoun = "";
 		for(SemanticGraphEdge edge:dependencyGraph.outgoingEdgeIterable(node)){
@@ -127,7 +135,7 @@ public class ReviewAnalyzer {
 				embalishedNoun += this.embalishAdverb(edge.getDependent(), dependencyGraph) + " ";
 			}
 		}
-		embalishedNoun += node.originalText();
+		embalishedNoun += this.getNodeText(node);
 		return embalishedNoun;
 	}
 	
@@ -139,7 +147,7 @@ public class ReviewAnalyzer {
 				embalishedAdverb += this.embalishAdverb(edge.getDependent(), dependencyGraph) + " ";
 			}
 		}
-		embalishedAdverb += node.originalText();
+		embalishedAdverb += this.getNodeText(node);
 		return embalishedAdverb;
 	}
 
@@ -151,7 +159,11 @@ public class ReviewAnalyzer {
 				embalishedAdj += this.embalishAdverb(edge.getDependent(), dependencyGraph) + " ";
 			}
 		}
-		embalishedAdj += node.originalText();
+		embalishedAdj += this.getNodeText(node);
 		return embalishedAdj;
+	}
+	
+	private String getNodeText(IndexedWord node){
+		return isPrintPOS? String.format("%s/%s", node.originalText(),node.tag()) : node.originalText();
 	}
 }

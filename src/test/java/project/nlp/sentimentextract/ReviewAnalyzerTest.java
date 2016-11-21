@@ -90,4 +90,13 @@ public class ReviewAnalyzerTest {
 		assertTrue(tupleList.contains(new AspectSentimentTuple("MOVIE_ACTOR", "not very good person")));
 	}
 	
+	@Test
+	public void testPrintPOS(){
+		ReviewAnalyzer reviewAnalyzer = new ReviewAnalyzer("A not really very good MOVIE_ACTOR", ruleManager);
+		reviewAnalyzer.setPrintPOS(true);
+		ArrayList<AspectSentimentTuple> tupleList = reviewAnalyzer.extractAspectSentimentExpression();
+		assertEquals(1, tupleList.size());
+		assertTrue(tupleList.contains(new AspectSentimentTuple("MOVIE_ACTOR", "not/RB really/RB very/RB good/JJ")));
+	}
+	
 }
