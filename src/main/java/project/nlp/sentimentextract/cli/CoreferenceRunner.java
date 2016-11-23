@@ -76,6 +76,7 @@ public class CoreferenceRunner {
 					logger.info("Processing review index:" + reviewIndex);
 					JSONObject review = iterator.next();
 					String reviewContent = (String)review.get("review");
+					reviewContent = reviewContent.replace("\n", " ").replace("<br>", " ");
 					String parsedReviewContent = CoreferenceParser.parseContent(reviewContent);
 					JSONObject parsedReview = new JSONObject();
 					parsedReview.put("review", parsedReviewContent);

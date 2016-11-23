@@ -2,7 +2,10 @@ package project.nlp.sentimentextract;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -21,10 +24,14 @@ public class ReviewAnalyzer {
 	private Document reviewDocument;
 	private RuleManager ruleManager;
 	private boolean isPrintPOS = false;
+	private final int index;
 	
-	public ReviewAnalyzer(String reviewContent,RuleManager ruleManager){
+	private Comparator<Pair<Integer, IndexedWord>> customComparator = (Pair<Integer, IndexedWord> t1,Pair<Integer, IndexedWord> t2) -> t1.getValue0().compareTo(t2.getValue0());
+	
+	public ReviewAnalyzer(int index, String reviewContent,RuleManager ruleManager){
 		reviewDocument = new Document(reviewContent);
 		this.ruleManager = ruleManager; 
+		this.index = index;
 	}
 	
 	public void setPrintPOS(boolean isPrintPOS) {
@@ -55,25 +62,31 @@ public class ReviewAnalyzer {
 				dependencyGraphNoCONJ.removeEdge(edge);
 			}
 			
-			for(String word:sentence.words()){
-				if(ruleManager.getAspectList().contains(word)){
-					for(String rule:ruleManager.getRuleList()){
-						String finaleRule = ruleManager.parseRule(rule, word);
-						SemgrexMatcher matcher = SemgrexPattern.compile(finaleRule).matcher(dependencyGraphNoCONJ);
-						while(matcher.findNextMatchingNode()){
+			for(String aspect:ruleManager.getAspectList()){
+				//skip if the sentence doesn't contain this aspect
+				if(!sentence.text().contains(aspect)){
+					continue;
+				}
+				for(String rule:ruleManager.getRuleList()){
+					String finaleRule = ruleManager.parseRule(rule, aspect);
+					SemgrexMatcher matcher = SemgrexPattern.compile(finaleRule).matcher(dependencyGraphNoCONJ);
+					while(matcher.findNextMatchingNode()){
 
-							IndexedWord matchNode = matcher.getMatch();
-							String sentimentExpression = this.embalishNode(matchNode, dependencyGraphNoCONJ);
-							AspectSentimentTuple tuple = new AspectSentimentTuple(word, sentimentExpression);
-							//handle conjunctive clause(if any...)
-							Pair<IndexedWord, String> conj = getFirstConjunctiveConnectedNode(matchNode, dependencyGraph);
-							if(conj != null){
-								tuple.setConj(conj.getValue1());
-								tuple.setConjSentiment(this.embalishNode(conj.getValue0(), dependencyGraphNoCONJ));
-							}
-							logger.info("[Add tuple]"+tuple.toString());
-							tupleList.add(tuple);
+						IndexedWord matchNode = matcher.getMatch();
+							
+						String sentimentExpression = getTextRepresentation(embalishNode(matchNode, dependencyGraphNoCONJ));
+						AspectSentimentTuple tuple = new AspectSentimentTuple(this.index,aspect, sentimentExpression);
+						//handle conjunctive clause(if any...)
+						Pair<IndexedWord, String> conj = getFirstConjunctiveConnectedNode(matchNode, dependencyGraph);
+						if(conj != null){
+							tuple.setConj(conj.getValue1());
+							tuple.setConjSentiment( getTextRepresentation(embalishNode(conj.getValue0(), dependencyGraphNoCONJ)) );
 						}
+						logger.info(
+								String.format("[Add tuple:%s]",tuple.toString())
+								+ String.format("using [Sentence:%s,rule:%s]",sentence.text(),finaleRule)
+								);
+						tupleList.add(tuple);
 					}
 				}
 			}
@@ -95,75 +108,109 @@ public class ReviewAnalyzer {
 		}
 		return null;
 	}
-	private String embalishNode(IndexedWord node,SemanticGraph dependencyGraph){
-		String tag = node.tag();
-		tag = tag.length() > 2 ? tag.substring(0,2):tag;
+	
+	private String getShortPOSTag(String posTag){
+		return posTag.length() > 2 ? posTag.substring(0,2):posTag;
+	}
+	
+	private List<Pair<Integer, IndexedWord>> embalishNode(IndexedWord node,SemanticGraph dependencyGraph ){
+		List<Pair<Integer, IndexedWord>> storeNodes = new ArrayList<>();
+		embalishNode(node, dependencyGraph, storeNodes);
+		return storeNodes;
+	}
+	
+	private void embalishNode(IndexedWord node,SemanticGraph dependencyGraph,List<Pair<Integer, IndexedWord>> storeNodes ){
+		String tag = getShortPOSTag(node.tag());
 		switch(tag){
 			case "JJ":
-				return embalishAdj(node, dependencyGraph);
+				this.embalishAdj(node, dependencyGraph,storeNodes);
+				break;
 			case "RB":
-				return embalishAdverb(node, dependencyGraph);
+				this.embalishAdverb(node, dependencyGraph,storeNodes);
+				break;
 			case "NN":
-				return embalishNoun(node, dependencyGraph);
+				this.embalishNoun(node, dependencyGraph,storeNodes);
+				break;
 			case "VB":
-				
+				this.embalishVerb(node, dependencyGraph,storeNodes);
+				break;
+			default:
+				storeNodes.add(new Pair(node.index(),node));
 		}
-		return this.getNodeText(node);
 	}
 	
-	/*
-	private String embalishVerb(IndexedWord node,SemanticGraph dependencyGraph){
-		String embalishedVerb = "";
+	private void embalishVerb(IndexedWord node,SemanticGraph dependencyGraph,List<Pair<Integer, IndexedWord>> storeNodes){
 		for(SemanticGraphEdge edge:dependencyGraph.outgoingEdgeIterable(node)){
-			if("JJ".equalsIgnoreCase(edge.getDependent().tag())){
-				embalishedVerb += this.embalishAdj(edge.getDependent(), dependencyGraph) + " ";
-			}else if("RB".equalsIgnoreCase(edge.getDependent().tag())){
-				embalishedVerb += this.embalishAdverb(edge.getDependent(), dependencyGraph) + " ";
+			String posTag = getShortPOSTag(edge.getDependent().tag());
+			if("RB".equals(posTag)){
+				this.embalishAdverb(edge.getDependent(), dependencyGraph,storeNodes);
+			}else if(edge.getRelation().getShortName().contains("dobj")){
+				this.embalishNode(edge.getDependent(), dependencyGraph,storeNodes);
+			}else if(edge.getRelation().getShortName().contains("xcomp")){
+				this.embalishNode(edge.getDependent(), dependencyGraph,storeNodes);
+			}else if(edge.getRelation().getShortName().contains("aux")){
+				this.embalishNode(edge.getDependent(), dependencyGraph,storeNodes);
 			}
 		}
-		embalishedVerb += getNodeText(node);
-		return embalishedVerb;
+		storeNodes.add(new Pair(node.index(),node));
 	}
-	*/
 	
-	private String embalishNoun(IndexedWord node,SemanticGraph dependencyGraph){
-		String embalishedNoun = "";
+	private void embalishNoun(IndexedWord node,SemanticGraph dependencyGraph,List<Pair<Integer, IndexedWord>> storeNodes){
 		for(SemanticGraphEdge edge:dependencyGraph.outgoingEdgeIterable(node)){
-			if("JJ".equalsIgnoreCase(edge.getDependent().tag())){
-				embalishedNoun += this.embalishAdj(edge.getDependent(), dependencyGraph) + " ";
-			}else if("RB".equalsIgnoreCase(edge.getDependent().tag())){
-				embalishedNoun += this.embalishAdverb(edge.getDependent(), dependencyGraph) + " ";
+			String posTag = getShortPOSTag(edge.getDependent().tag());
+			if("JJ".equals(posTag)){
+				this.embalishAdj(edge.getDependent(), dependencyGraph,storeNodes);
+			}else if("RB".equals(posTag)){
+				this.embalishAdverb(edge.getDependent(), dependencyGraph,storeNodes);
+			}else if(edge.getRelation().getShortName().contains("case")){
+				this.embalishNode(edge.getDependent(), dependencyGraph,storeNodes);
+			}else if(edge.getRelation().getShortName().contains("nmod")){
+				this.embalishNode(edge.getDependent(), dependencyGraph,storeNodes);
+			}else if(edge.getRelation().getShortName().contains("cc:preconj")){
+				this.embalishNode(edge.getDependent(), dependencyGraph,storeNodes);
+			}else if(edge.getRelation().getShortName().contains("neg")){
+				this.embalishNode(edge.getDependent(), dependencyGraph,storeNodes);
 			}
 		}
-		embalishedNoun += this.getNodeText(node);
-		return embalishedNoun;
+		storeNodes.add(new Pair(node.index(),node));
 	}
 	
-	private String embalishAdverb(IndexedWord node,SemanticGraph dependencyGraph){
-		String embalishedAdverb = "";
+	private void embalishAdverb(IndexedWord node,SemanticGraph dependencyGraph,List<Pair<Integer, IndexedWord>> storeNodes){
 		for(SemanticGraphEdge edge:dependencyGraph.outgoingEdgeIterable(node)){
+			String posTag = getShortPOSTag(edge.getDependent().tag());
 			//append only Adverb
-			if("RB".equalsIgnoreCase(edge.getDependent().tag())){
-				embalishedAdverb += this.embalishAdverb(edge.getDependent(), dependencyGraph) + " ";
+			if("RB".equals(posTag)){
+				this.embalishAdverb(edge.getDependent(), dependencyGraph,storeNodes);
 			}
 		}
-		embalishedAdverb += this.getNodeText(node);
-		return embalishedAdverb;
+		storeNodes.add(new Pair(node.index(),node));
 	}
 
-	private String embalishAdj(IndexedWord node,SemanticGraph dependencyGraph){
-		String embalishedAdj = "";
+	private void embalishAdj(IndexedWord node,SemanticGraph dependencyGraph,List<Pair<Integer, IndexedWord>> storeNodes){
 		for(SemanticGraphEdge edge:dependencyGraph.outgoingEdgeIterable(node)){
+			String posTag = getShortPOSTag(edge.getDependent().tag());
 			//append only Adverb
-			if("RB".equalsIgnoreCase(edge.getDependent().tag())){
-				embalishedAdj += this.embalishAdverb(edge.getDependent(), dependencyGraph) + " ";
+			if("RB".equals(posTag)){
+				this.embalishAdverb(edge.getDependent(), dependencyGraph,storeNodes);
+			}else if(edge.getRelation().getShortName().contains("case")){
+				this.embalishNode(edge.getDependent(), dependencyGraph,storeNodes);
+			}else if(edge.getRelation().getShortName().contains("cc:preconj")){
+				this.embalishNode(edge.getDependent(), dependencyGraph,storeNodes);
+			}else if(edge.getRelation().getShortName().contains("neg")){
+				this.embalishNode(edge.getDependent(), dependencyGraph,storeNodes);
 			}
 		}
-		embalishedAdj += this.getNodeText(node);
-		return embalishedAdj;
+		storeNodes.add(new Pair(node.index(),node));
 	}
 	
-	private String getNodeText(IndexedWord node){
-		return isPrintPOS? String.format("%s/%s", node.originalText(),node.tag()) : node.originalText();
+	private String getTextRepresentation(List<Pair<Integer, IndexedWord>> storeNodes){
+		storeNodes.sort(customComparator);
+		String textRepresentation = "";
+		for(Pair<Integer, IndexedWord> element: storeNodes){
+			IndexedWord node = element.getValue1();
+			String nodeText = isPrintPOS? String.format("%s/%s", node.originalText(),node.tag()) : node.originalText();
+			textRepresentation = textRepresentation + nodeText + " ";
+		}
+		return textRepresentation.trim();
 	}
 }

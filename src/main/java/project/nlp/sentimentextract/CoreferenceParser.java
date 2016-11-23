@@ -49,7 +49,7 @@ public class CoreferenceParser {
 	    	int wordIndex = 0;
 
 	    	while(wordIndex < sentence.words().size()){
-	    		String word = sentence.word(wordIndex);
+	    		String word = sentence.originalText(wordIndex);
 	    		Pair<Integer,Integer> key = new Pair<Integer,Integer>(sentenceIndex,wordIndex);
 	    		if(chainDict.containsKey(key)){
 	    			Pair<String,Integer> value = chainDict.get(key);

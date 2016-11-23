@@ -87,7 +87,8 @@ public class MovieReviewsRunner {
 					logger.info("Processing review index:" + reviewIndex);
 					JSONObject review = iterator.next();
 					String reviewContent = (String)review.get("review");
-					ReviewAnalyzer reviewAnalyzer = new ReviewAnalyzer(reviewContent, ruleManager);
+					reviewContent = reviewContent.replace("\n", " ").replace("<br>", " ");
+					ReviewAnalyzer reviewAnalyzer = new ReviewAnalyzer(reviewIndex,reviewContent, ruleManager);
 					reviewAnalyzer.setPrintPOS(isPrintPOS);
 					ArrayList<AspectSentimentTuple> tuplesReview = reviewAnalyzer.extractAspectSentimentExpression();
 					tuples.addAll(tuplesReview);
@@ -104,11 +105,12 @@ public class MovieReviewsRunner {
 	
 	private static void writeCSVResult(ArrayList<AspectSentimentTuple> tuples,FileWriter fw) throws Exception{
 		CSVFormat csvFormat = CSVFormat.DEFAULT.
-			withHeader("aspect","sentiment","conj","conjSentiment");
+			withHeader("index","aspect","sentiment","conj","conjSentiment");
 		try(CSVPrinter csvPrinter = new CSVPrinter(fw, csvFormat))
 		{
 			for(AspectSentimentTuple tuple:tuples){
 				List<String> record = new ArrayList<>();
+				record.add(tuple.getIndex() + "");
 				record.add(tuple.getAspect());
 				record.add(tuple.getSentiment());
 				record.add(tuple.getConj());

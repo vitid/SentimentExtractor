@@ -11,17 +11,6 @@ public class RuleManagerTest {
 	public void before(){
 		ruleManager = new RuleManager("extract_rules.test.properties");
 	}
-
-	@Test
-	public void testGetAspectList(){
-		assertEquals(3, ruleManager.getAspectList().size());
-		assertEquals("MOVIE_SONG", ruleManager.getAspectList().get(1));
-	}
-	
-	@Test
-	public void testGetRuleList(){
-		assertEquals(5, ruleManager.getRuleList().size());
-	}
 	
 	@Test
 	public void testParseRule(){

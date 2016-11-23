@@ -1,22 +1,28 @@
 package project.nlp.sentimentextract;
 
 public class AspectSentimentTuple {
+	private int index;
 	private String aspect;
 	private String sentiment;
 	private String conj;
 	private String conjSentiment;
 	
-	public AspectSentimentTuple(String aspect,String sentiment){
-		this(aspect,sentiment,"","");
+	public AspectSentimentTuple(int index,String aspect,String sentiment){
+		this(index,aspect,sentiment,"","");
 	}
 	
-	public AspectSentimentTuple(String aspect,String sentiment,String conj,String conjSentiment){
+	public AspectSentimentTuple(int index,String aspect,String sentiment,String conj,String conjSentiment){
+		this.index = index;
 		this.aspect = aspect;
 		this.sentiment = sentiment;
 		this.conj = conj;
 		this.conjSentiment = conjSentiment;
 	}
 	
+	public int getIndex() {
+		return index;
+	}
+
 	public String getAspect() {
 		return aspect;
 	}
@@ -42,8 +48,8 @@ public class AspectSentimentTuple {
 
 	public String toString(){
 		
-		return(String.format("%s(aspect:%s, sentiment:%s, conj:%s, conjSentiment:%s)",
-				AspectSentimentTuple.class,
+		return(String.format("(%s,%s,%s,%s,%s)",
+				getIndex(),
 				getAspect(),
 				getSentiment(),
 				getConj(),
@@ -57,6 +63,7 @@ public class AspectSentimentTuple {
 			return false;
 		AspectSentimentTuple tuple = (AspectSentimentTuple)obj;
 		return(
+				tuple.getIndex() == this.getIndex() &&
 				tuple.getAspect().equals(this.getAspect()) &&
 				tuple.getSentiment().equals(this.getSentiment()) &&
 				tuple.getConj().equals(this.getConj()) &&
