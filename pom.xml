@@ -32,7 +32,7 @@
 					<!-- coreNLP consumes crazy amount of memory, required for testing... -->
 					<argLine>-Xmx6144m</argLine>
 					<!--Or, set to true for skipping a test -->
-					<skipTests>true</skipTests>
+					<skipTests>false</skipTests>
 				</configuration>
 			</plugin>
 		</plugins>
