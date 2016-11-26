@@ -23,3 +23,21 @@ mvn clean compile assembly:single install
 File named `SentimentExtractor-1.0-SNAPSHOT-jar-with-dependencies.jar` should be installed into your local repository.
 
 Noted: Testing required CoreNLP to load models for both modules, which requires ~4-6 GB memory. If your machine doesn't have that much memory, simply turn the Testing phase off by setting `<skipTests>true</skipTests>` in `pom.xml`
+
+# Run
+Put `SentimentExtractor-1.0-SNAPSHOT-jar-with-dependencies.jar` and script files in [script folder](script/) into the same directory.
+
+
+To run Coreference Resolution Module:
+```
+runCorefModule.sh {input_dir} {output_dir}
+```
+
+
+To run Aspect-Sentiment Linking Module:
+```
+runAspectSentimentLinkingModule.sh {input_dir} {output_dir}
+```
+
+
+Log data is printed out in app.log
