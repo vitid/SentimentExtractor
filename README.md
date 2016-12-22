@@ -3,6 +3,9 @@ Aspect-Sentiment Extractor module(as part of CSCI-544 final project)
 
 Consisted of Coreference Resolution Module and Aspect-Sentiment Linking Module. Both modules can be run seperately.
 
+The associated report for the module can be found at [Report.pdf](Report.pdf)
+
+
 # Build
 Firstly, install stanford-corenlp and its model into your local maven repository(maven repository for version 3.7.0 is not available at the time of this writing).
 
